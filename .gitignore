@@ -1,0 +1,8 @@
+credentials.json
+certificate/
+node_modules/
+.expo/
+dist/
+.env
+.env.*
+!.env.example

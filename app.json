@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "CraftControl",
+    "slug": "minecraft-time-calculator",
+    "version": "1.0.0",
+    "icon": "./assets/icon.png",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3abfe5e0-f2d8-4b7d-ba89-117acd2aaaff",
+      "checkAutomatically": "NEVER",
+      "fallbackToCacheTimeout": 0
+    },
+    "orientation": "default",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.feijoa5832.pumpkin8382",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsArbitraryLoadsInWebContent": true
+        }
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3abfe5e0-f2d8-4b7d-ba89-117acd2aaaff"
+      }
+    },
+    "plugins": [
+      "expo-sharing",
+      "./plugins/withNMSSHFork"
+    ]
+  }
+}

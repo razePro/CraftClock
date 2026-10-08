@@ -1,0 +1,87 @@
+name: iOS Preview Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    name: Build preview IPA
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install EAS CLI
+        run: npm install --global eas-cli
+
+      - name: Prepare iOS signing credentials
+        shell: bash
+        env:
+          IOS_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
+          IOS_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          python3 - <<'PY'
+          import base64
+          import json
+          import os
+          from pathlib import Path
+
+          required = (
+              'IOS_DISTRIBUTION_CERTIFICATE_BASE64',
+              'IOS_DISTRIBUTION_CERTIFICATE_PASSWORD',
+              'IOS_PROVISIONING_PROFILE_BASE64',
+          )
+          missing = [name for name in required if not os.environ.get(name)]
+          if missing:
+              raise SystemExit('Missing required GitHub Actions secrets: ' + ', '.join(missing))
+
+          certificate_dir = Path('certificate')
+          certificate_dir.mkdir(exist_ok=True)
+          (certificate_dir / 'distribution.p12').write_bytes(
+              base64.b64decode(os.environ['IOS_DISTRIBUTION_CERTIFICATE_BASE64'])
+          )
+          (certificate_dir / 'profile.mobileprovision').write_bytes(
+              base64.b64decode(os.environ['IOS_PROVISIONING_PROFILE_BASE64'])
+          )
+          credentials = {
+              'ios': {
+                  'provisioningProfilePath': 'certificate/profile.mobileprovision',
+                  'distributionCertificate': {
+                      'path': 'certificate/distribution.p12',
+                      'password': os.environ['IOS_DISTRIBUTION_CERTIFICATE_PASSWORD'],
+                  },
+              },
+          }
+          Path('credentials.json').write_text(json.dumps(credentials), encoding='utf-8')
+          PY
+
+      - name: Build iOS IPA locally
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          mkdir -p dist
+          eas build --platform ios --profile preview --local --non-interactive --output dist/CraftControl-preview.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CraftControl-iOS-preview
+          path: dist/CraftControl-preview.ipa
+          if-no-files-found: error
+          retention-days: 14
